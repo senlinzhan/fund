@@ -11,9 +11,27 @@ BUY_RECORD = [
             "2020-09-09": 2500,  # 买入金额
             "2020-09-24": 2500,
         }, 
-        "sellRecordList": {
-            "2020-10-21": 1000,  # 卖出份数
-        }
+        #"sellRecordList": {
+        #    "2020-10-21": 1000,  # 卖出份数
+        #}
+    },
+    {
+        "code": "001510",
+        "buyRecordList": {
+            "2020-09-24": 2500,
+        },
+    },
+    {
+        "code": "006101",
+        "buyRecordList": {
+            "2020-09-24": 2500,
+        },
+    },
+    {
+        "code": "005276",
+        "buyRecordList": {
+            "2020-09-24": 2500,
+        },
     }
 ]
 
@@ -122,7 +140,18 @@ def getFundHistoryValue(code, name):
     return historyValue
 
 
+def custom_strategy(declinePencent, increasePencent, estimatedValue, currentMoney):
+    if declinePencent >= 5 and estimatedValue.increasePercentage <= -1:
+        needAddMoney = round(currentMoney * declinePencent * 2 / 100.0, 0)
+        print("投资建议: 从高点回撤过大: {}%, 可以考虑加仓: {}元".format(declinePencent, needAddMoney))
+    elif increasePencent >= 8 and estimatedValue.increasePercentage >= 1:
+        needSellMoney = round(currentMoney * increasePencent * 2 / 100.0, 0)
+        print("投资建议: 从低点涨幅过大{}%，可考虑卖出".format(increasePencent), needSellMoney)
+    else:
+        print("投资建议: 观望, 投资需要耐心")
+
 def main():
+    print("==================严格遵守投资纪律=================\n")
     for record in BUY_RECORD:
         print("---------------------------------------------------------------------")
         code = record["code"]
@@ -145,15 +174,15 @@ def main():
             if holdingDays >= 30:
                 canSellFundNums += fundNum
 
-        for sellDate, sellfundNum in record["sellRecordList"].items():
-            hisValue = historyValue.getValueByDate(sellDate)
-            totalFundNum -= sellfundNum
-            canSellFundNums = round(canSellFundNums - sellfundNum, 2)
+        if "sellRecordList" in record:
+            for sellDate, sellfundNum in record["sellRecordList"].items():
+                hisValue = historyValue.getValueByDate(sellDate)
+                totalFundNum -= sellfundNum
+                canSellFundNums = round(canSellFundNums - sellfundNum, 2)
             
-            if hisValue is not None:
-                sellMoney = sellfundNum * hisValue
-                print("卖出, 日期: {}, 卖出金额: {}, 卖出份数: {}, 卖出净值: {}".format(sellDate, sellMoney, sellfundNum, hisValue))
-
+                if hisValue is not None:
+                    sellMoney = sellfundNum * hisValue
+                    print("卖出, 日期: {}, 卖出金额: {}, 卖出份数: {}, 卖出净值: {}".format(sellDate, sellMoney, sellfundNum, hisValue))
 
         print("\n满 30 天可卖份数: {}".format(canSellFundNums))
         currentMoney = round(totalFundNum * estimatedValue.realValue, 2)
@@ -163,7 +192,9 @@ def main():
         declinePencent = round(100.0 * (historyValue.getMaxValue() - estimatedValue.value) / historyValue.getMaxValue(), 2)
         increasePencent = round(100.0 * (estimatedValue.value - historyValue.getMinValue()) / historyValue.getMinValue(), 2)
         print("从最高点以来回撤: {}%, 从最低点以来涨幅: {}%".format(declinePencent, increasePencent))
-        print("当前金额: {}, 今日估算盈亏: {}".format(currentMoney, diff))
+        print("当前金额: {}, 今日估算盈亏: {}元".format(currentMoney, diff))
+        custom_strategy(declinePencent, increasePencent, estimatedValue, currentMoney)
+
         print("---------------------------------------------------------------------\n")
 
 main()
